@@ -66,7 +66,7 @@ def fill_jmp_offset(data, start, offset):
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
-        print 'Usage: python deflat.py filename function_address(hex)'
+        print('Usage: python deflat.py filename function_address(hex)')
         exit(0)
     opcode = {'a':'\x87', 'ae': '\x83', 'b':'\x82', 'be':'\x86', 'c':'\x82', 'e':'\x84', 'z':'\x84', 'g':'\x8F', 
               'ge':'\x8D', 'l':'\x8C', 'le':'\x8E', 'na':'\x86', 'nae':'\x82', 'nb':'\x83', 'nbe':'\x87', 'nc':'\x83',
@@ -83,14 +83,14 @@ if __name__ == '__main__':
     main_dispatcher = cfg.find_basic_block(prologue).direct_branch
     retn, pre_dispatcher = get_retn_predispatcher(cfg)
     relevant_blocks, nop_blocks = get_relevant_nop_blocks(cfg)
-    print '*******************relevant blocks************************'
-    print 'prologue:%#x' % start
-    print 'main_dispatcher:%#x' % main_dispatcher
-    print 'pre_dispatcher:%#x' % pre_dispatcher
-    print 'retn:%#x' % retn
-    print 'relevant_blocks:', [hex(addr) for addr in relevant_blocks]
+    print('*******************relevant blocks************************')
+    print('prologue:%#x' % start)
+    print('main_dispatcher:%#x' % main_dispatcher)
+    print('pre_dispatcher:%#x' % pre_dispatcher)
+    print('retn:%#x' % retn)
+    print('relevant_blocks:', [hex(addr) for addr in relevant_blocks])
 
-    print '*******************symbolic execution*********************'
+    print('*******************symbolic execution*********************')
     relevants = relevant_blocks
     relevants.append(prologue)
     relevants_without_retn = list(relevants)
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     modify_value = None
     patch_instrs = {}
     for relevant in relevants_without_retn:
-        print '-------------------dse %#x---------------------' % relevant
+        print('-------------------dse %#x---------------------' % relevant)
         block = cfg.find_basic_block(relevant)
         has_branches = False
         hook_addr = None
@@ -117,11 +117,11 @@ if __name__ == '__main__':
         else:
             flow[relevant].append(symbolic_execution(relevant, hook_addr))
             
-    print '************************flow******************************'
+    print('************************flow******************************')
     for (k, v) in flow.items():
-        print '%#x:' % k, [hex(child) for child in v]
+        print('%#x:' % k, [hex(child) for child in v])
 
-    print '************************patch*****************************'
+    print('************************patch*****************************')
     flow.pop(retn)
     origin = open(filename, 'rb')
     origin_data = list(origin.read())
@@ -149,4 +149,4 @@ if __name__ == '__main__':
             fill_jmp_offset(origin_data, file_offset + 1, childs[1] - (instr.address + 6) - 5)
     recovery.write(''.join(origin_data))
     recovery.close()
-    print 'Successful! The recovered file: %s' % (filename + '.recovered')
+    print('Successful! The recovered file: %s' % (filename + '.recovered'))
