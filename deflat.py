@@ -1,6 +1,5 @@
 from barf.barf import BARF
 import angr
-import simuvex
 import pyvex
 import claripy
 import struct
@@ -28,7 +27,7 @@ def get_relevant_nop_blocks(cfg):
 
 def statement_inspect(state):
     global modify_value
-    expressions = state.scratch.irsb.statements[state.inspect.statement].expressions
+    expressions = list(state.scratch.irsb.statements[state.inspect.statement].expressions)
     if len(expressions) != 0 and isinstance(expressions[0], pyvex.expr.ITE):
         state.scratch.temps[expressions[0].cond.tmp] = modify_value
         state.inspect._breakpoints['statement'] = []
@@ -39,14 +38,15 @@ def symbolic_execution(start_addr, hook_addr=None, modify=None, inspect=False):
         b.hook(hook_addr, retn_procedure, length=5)
     if modify != None:
         modify_value = modify
-    state = b.factory.blank_state(addr=start_addr, remove_options={simuvex.o.LAZY_SOLVES})
+    state = b.factory.blank_state(addr=start_addr, remove_options={angr.options.LAZY_SOLVES})
     if inspect:
-        state.inspect.b('statement', when=simuvex.BP_BEFORE, action=statement_inspect)
-    p = b.factory.path(state)
-    succ=p.step()
-    while succ.successors[0].addr not in relevants:
-        succ=succ.successors[0].step()
-    return succ.successors[0].addr
+        state.inspect.b('statement', when=angr.BP_BEFORE, action=statement_inspect)
+    p = b.factory.simulation_manager(state)
+    succ = p.step()
+    successors = succ.successors(state).successors
+    while successors[0].addr not in relevants:
+        successors = successors[0].step()
+    return successors[0].addr
 
 def retn_procedure(state):
     global b
@@ -72,6 +72,10 @@ if __name__ == '__main__':
               'ge':'\x8D', 'l':'\x8C', 'le':'\x8E', 'na':'\x86', 'nae':'\x82', 'nb':'\x83', 'nbe':'\x87', 'nc':'\x83',
               'ne':'\x85', 'ng':'\x8E', 'nge':'\x8C', 'nl':'\x8D', 'nle':'\x8F', 'no':'\x81', 'np':'\x8B', 'ns':'\x89',
               'nz':'\x85', 'o':'\x80', 'p':'\x8A', 'pe':'\x8A', 'po':'\x8B', 's':'\x88', 'nop':'\x90', 'jmp':'\xE9', 'j':'\x0F'}
+    
+    for k, v in opcode.items():
+        opcode[k] = ord(v)
+
     filename = sys.argv[1]
     start = int(sys.argv[2], 16)
     barf = BARF(filename)
@@ -147,6 +151,6 @@ if __name__ == '__main__':
             file_offset += 6
             origin_data[file_offset] = opcode['jmp']
             fill_jmp_offset(origin_data, file_offset + 1, childs[1] - (instr.address + 6) - 5)
-    recovery.write(''.join(origin_data))
+    recovery.write(bytearray(origin_data))
     recovery.close()
     print('Successful! The recovered file: %s' % (filename + '.recovered'))
