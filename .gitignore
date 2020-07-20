@@ -34,3 +34,5 @@ Pods/
 Podfile.lock
 
 *.log
+__pycache__/
+*.egg-info/

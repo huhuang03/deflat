@@ -64,7 +64,7 @@ def fill_jmp_offset(data, start, offset):
     for i in range(4):
         data[start + i] = jmp_offset[i]
 
-if __name__ == '__main__':
+def main():
     if len(sys.argv) != 3:
         print('Usage: python deflat.py filename function_address(hex)')
         exit(0)
@@ -154,3 +154,6 @@ if __name__ == '__main__':
     recovery.write(bytearray(origin_data))
     recovery.close()
     print('Successful! The recovered file: %s' % (filename + '.recovered'))
+
+if __name__ == '__main__':
+    main()
