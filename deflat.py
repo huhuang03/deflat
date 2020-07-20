@@ -5,8 +5,11 @@ import claripy
 import struct
 import sys
 
+pre_dispatcher = None
+retrn = None
+
 def get_retn_predispatcher(cfg):
-    global main_dispatcher
+    global main_dispatcher, pre_dispatcher, retn
     for block in cfg.basic_blocks:
         if len(block.branches) == 0 and block.direct_branch == None:
             retn = block.start_address
@@ -65,6 +68,7 @@ def fill_jmp_offset(data, start, offset):
         data[start + i] = jmp_offset[i]
 
 def main():
+    global retn, pre_dispatcher, main_dispatcher, prologue, b, relevants, opcode
     if len(sys.argv) != 3:
         print('Usage: python deflat.py filename function_address(hex)')
         exit(0)
@@ -81,6 +85,7 @@ def main():
     barf = BARF(filename)
     base_addr = barf.binary.entry_point >> 12 << 12
     b = angr.Project(filename, load_options={'auto_load_libs': False, 'main_opts':{'custom_base_addr': 0}})
+    print("entry: ", b.entry)
     cfg = barf.recover_cfg(start=start)
     blocks = cfg.basic_blocks
     prologue = start
